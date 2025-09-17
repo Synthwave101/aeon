@@ -68,25 +68,25 @@ export default function Magic() {
         gltf.scene.scale.setScalar(scale);
         gltf.scene.position.sub(center.multiplyScalar(scale));
 
-        // Boost reflections on PBR materials
+        // Boost reflections on PBR materials without using any
         gltf.scene.traverse((obj) => {
-          const mesh = obj as THREE.Mesh;
-          const material = (mesh as any).material as THREE.Material | THREE.Material[] | undefined;
-          if (!material) return;
-          const setIntensity = (m: any) => {
-            if ("envMapIntensity" in m) {
-              m.envMapIntensity = 1.3;
-              m.needsUpdate = true;
-            }
-            if ("metalness" in m && typeof m.metalness === "number") {
-              m.metalness = Math.min(1, Math.max(0.2, m.metalness));
-            }
-            if ("roughness" in m && typeof m.roughness === "number") {
-              m.roughness = Math.max(0.05, m.roughness);
-            }
-          };
-          if (Array.isArray(material)) material.forEach(setIntensity);
-          else setIntensity(material);
+          if ((obj as THREE.Mesh).isMesh) {
+            const mesh = obj as THREE.Mesh;
+            const materialOrArray = mesh.material;
+            const apply = (m: THREE.Material) => {
+              if (
+                m instanceof THREE.MeshStandardMaterial ||
+                m instanceof THREE.MeshPhysicalMaterial
+              ) {
+                m.envMapIntensity = 1.3;
+                m.metalness = Math.min(1, Math.max(0.2, m.metalness));
+                m.roughness = Math.max(0.05, m.roughness);
+                m.needsUpdate = true;
+              }
+            };
+            if (Array.isArray(materialOrArray)) materialOrArray.forEach(apply);
+            else if (materialOrArray) apply(materialOrArray);
+          }
         });
 
         baseY = gltf.scene.position.y;
@@ -94,7 +94,6 @@ export default function Magic() {
       },
       undefined,
       (err) => {
-        // eslint-disable-next-line no-console
         console.error("Failed to load GLB model", err);
       }
     );
@@ -128,8 +127,9 @@ export default function Magic() {
       renderer.dispose();
       container.removeChild(renderer.domElement);
       pmremGenerator.dispose();
-      // Dispose environment texture
-      (envMap as any)?.dispose?.();
+      // Dispose PMREM render target and clear environment
+      envRT.dispose();
+      scene.environment = null;
     };
   }, []);
 
