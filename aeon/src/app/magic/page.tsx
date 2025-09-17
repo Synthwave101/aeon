@@ -36,7 +36,7 @@ export default function Magic() {
     // Environment lighting for realistic reflections
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-    const envRT = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.04);
+    const envRT = pmremGenerator.fromScene(new RoomEnvironment(), 0.04);
     const envMap = envRT.texture;
     scene.environment = envMap;
     scene.background = new THREE.Color(0x000000);
