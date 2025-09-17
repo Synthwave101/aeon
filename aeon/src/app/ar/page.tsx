@@ -1,6 +1,22 @@
 'use client'
-import 'model-viewer' // npm i @google/model-viewer
+import '@google/model-viewer'
 import Link from 'next/link'
+import type { DetailedHTMLProps, HTMLAttributes, FC } from 'react'
+
+type ModelViewerProps = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & {
+  src?: string
+  'ios-src'?: string
+  ar?: boolean
+  'ar-modes'?: string
+  'camera-controls'?: boolean
+  'auto-rotate'?: boolean
+  'auto-rotate-speed'?: string | number
+  'shadow-intensity'?: string | number
+  exposure?: string | number
+  'disable-zoom'?: boolean
+}
+
+const ModelViewer = 'model-viewer' as unknown as FC<ModelViewerProps>
 
 export default function ARPage() {
   return (
@@ -18,7 +34,7 @@ export default function ARPage() {
 
       {/* Viewer web: giro + “float” */}
       <div className="float-wrap">
-        <model-viewer
+        <ModelViewer
           style={{ width: '90vw', maxWidth: 640, height: 480 }}
           src="/models/heart.glb"
           ios-src="/models/heart.usdz"
