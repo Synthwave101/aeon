@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "AEON",
   description: "A SilverSoft Software",
   icons: {
-    icon: "/AEONLogo.ico",
+    icon: "/AEON_Isologo.ico",
   },
 };
 
