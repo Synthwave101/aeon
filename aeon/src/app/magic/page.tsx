@@ -50,10 +50,9 @@ export default function Magic() {
 
     const loader = new GLTFLoader();
     let heart: THREE.Object3D | null = null;
-    let baseY = 0;
 
     loader.load(
-      "/models/heart.glb",
+      "/models/AEON_Isologo.glb",
       (gltf) => {
         heart = gltf.scene;
 
@@ -64,7 +63,7 @@ export default function Magic() {
         box.getCenter(center);
 
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 1.0 / maxDim;
+        const scale = .8 / maxDim;
         gltf.scene.scale.setScalar(scale);
         gltf.scene.position.sub(center.multiplyScalar(scale));
 
@@ -89,7 +88,6 @@ export default function Magic() {
           }
         });
 
-        baseY = gltf.scene.position.y;
         scene.add(gltf.scene);
       },
       undefined,
@@ -99,14 +97,11 @@ export default function Magic() {
     );
 
     let rafId = 0;
-    const clock = new THREE.Clock();
 
     const animate = () => {
       rafId = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
       if (heart) {
         heart.rotation.y += 0.01;
-        heart.position.y = baseY + Math.sin(t * 1.5) * 0.05;
       }
       renderer.render(scene, camera);
     };
@@ -137,7 +132,7 @@ export default function Magic() {
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black"
-      aria-label="Magic spinning heart"
+      aria-label="AEON Isologo"
     />
   );
 }
