@@ -3,9 +3,10 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
-export default function Magic() {
+export default function Login() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,12 +50,17 @@ export default function Magic() {
     scene.add(directionalLight);
 
     const loader = new GLTFLoader();
-    let heart: THREE.Object3D | null = null;
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+    // Uncomment to force JS decoder instead of WASM (fallback):
+    // dracoLoader.setDecoderConfig({ type: "js" });
+    loader.setDRACOLoader(dracoLoader);
+    let isologo: THREE.Object3D | null = null;
 
     loader.load(
       "/models/AEON_Isologo.glb",
       (gltf) => {
-        heart = gltf.scene;
+        isologo = gltf.scene;
 
         const box = new THREE.Box3().setFromObject(gltf.scene);
         const size = new THREE.Vector3();
@@ -100,8 +106,8 @@ export default function Magic() {
 
     const animate = () => {
       rafId = requestAnimationFrame(animate);
-      if (heart) {
-        heart.rotation.y += 0.01;
+      if (isologo) {
+        isologo.rotation.y += 0.01;
       }
       renderer.render(scene, camera);
     };
@@ -121,6 +127,7 @@ export default function Magic() {
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
       container.removeChild(renderer.domElement);
+      dracoLoader.dispose();
       pmremGenerator.dispose();
       // Dispose PMREM render target and clear environment
       envRT.dispose();
@@ -132,7 +139,7 @@ export default function Magic() {
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black"
-      aria-label="AEON Isologo"
+      aria-label="Iniciar sesión - AEON Isologo"
     />
   );
 }

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
-  const handleMagic = useCallback(() => {
-    router.push("/magic");
+  const handleLogin = useCallback(() => {
+    router.push("/iniciar-sesion");
   }, [router]);
 
   return (
@@ -17,10 +17,10 @@ export default function Home() {
         </h1>
 
         <button
-          onClick={handleMagic}
+          onClick={handleLogin}
           className="px-5 py-3 rounded-md bg-white text-black hover:bg-zinc-200 active:scale-[0.98] transition"
         >
-          You wanna see a magic trick?
+          Iniciar sesión
         </button>
       </div>
     </main>
