@@ -113,18 +113,30 @@ export default function Login() {
     };
     animate();
 
-    const handleResize = () => {
+    const updateSize = () => {
       if (!container) return;
       const { clientWidth, clientHeight } = container;
-      camera.aspect = clientWidth / clientHeight;
+      camera.aspect = clientWidth / Math.max(1, clientHeight);
       camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(clientWidth, clientHeight);
     };
-    window.addEventListener("resize", handleResize);
+
+    // Handle window resize, orientation changes, and element resize
+    const handleOrientation = () => {
+      // Defer a bit to allow browser to recalc layout after rotation
+      setTimeout(updateSize, 300);
+    };
+    window.addEventListener("resize", updateSize);
+    window.addEventListener("orientationchange", handleOrientation);
+    const resizeObserver = new ResizeObserver(() => updateSize());
+    resizeObserver.observe(container);
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", updateSize);
+      window.removeEventListener("orientationchange", handleOrientation);
+      resizeObserver.disconnect();
       renderer.dispose();
       container.removeChild(renderer.domElement);
       dracoLoader.dispose();

@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   description: "A SilverSoft Software",
   icons: {
     icon: "/AEON_Isologo.ico",
+    apple: "/icons/apple-touch-icon.png"
+  },
+  manifest: "/manifest.webmanifest",
+  themeColor: "#000000",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black",
   },
 };
 
