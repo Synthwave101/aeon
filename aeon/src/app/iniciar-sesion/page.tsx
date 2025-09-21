@@ -135,7 +135,7 @@ export default function Login() {
 
     // Rotation control with inertia
     let rafId = 0;
-    let baseSpeed = 0.01; // natural speed
+    const baseSpeed = 0.01; // natural speed
     let speed = baseSpeed;
     let isDragging = false;
     let lastX = 0;
