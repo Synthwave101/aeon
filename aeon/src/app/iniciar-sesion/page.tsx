@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -20,14 +20,18 @@ export default function Login() {
   const [expectedUser, setExpectedUser] = useState<string | null>(null);
   const [expectedPass, setExpectedPass] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const modelRadiusRef = useRef<number | null>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+  const [bgReady, setBgReady] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -37,9 +41,10 @@ export default function Login() {
     );
     camera.position.set(0, 0, 2.4);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
@@ -53,14 +58,16 @@ export default function Login() {
     const envRT = pmremGenerator.fromScene(new RoomEnvironment(), 0.04);
     const envMap = envRT.texture;
     scene.environment = envMap;
-    scene.background = new THREE.Color(0x000000);
+    scene.background = null;
 
     // Optional direct lights to add definition
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(3, 5, 4);
     scene.add(directionalLight);
+
+    // (Particles moved to full-screen background renderer)
 
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
@@ -114,7 +121,7 @@ export default function Login() {
                 m instanceof THREE.MeshStandardMaterial ||
                 m instanceof THREE.MeshPhysicalMaterial
               ) {
-                m.envMapIntensity = 1.3;
+                m.envMapIntensity = 0.7;
                 m.metalness = Math.min(1, Math.max(0.2, m.metalness));
                 m.roughness = Math.max(0.05, m.roughness);
                 m.needsUpdate = true;
@@ -126,6 +133,7 @@ export default function Login() {
         });
 
         scene.add(gltf.scene);
+        setLogoReady(true);
       },
       undefined,
       (err) => {
@@ -247,6 +255,7 @@ export default function Login() {
       renderer.dispose();
       container.removeChild(renderer.domElement);
       dracoLoader.dispose();
+      // particles are owned by background renderer
       pmremGenerator.dispose();
       // Dispose PMREM render target and clear environment
       envRT.dispose();
@@ -259,6 +268,10 @@ export default function Login() {
     if (typeof navigator !== "undefined") {
       const ua = navigator.userAgent || navigator.vendor;
       setIsIOS(/iPad|iPhone|iPod/.test(ua));
+      // Detect PWA installed mode
+      const mq = window.matchMedia('(display-mode: standalone)');
+      setIsStandalone((window.navigator as any).standalone === true || mq.matches);
+      try { mq.addEventListener('change', (e) => setIsStandalone(e.matches)); } catch { /* Safari older */ }
     }
   }, []);
 
@@ -332,16 +345,20 @@ export default function Login() {
 
   return (
     <main className="relative h-[100svh] bg-black text-white overflow-hidden overscroll-none">
+      {/* Fullscreen background particles canvas */}
+      <BackgroundParticles ref={bgRef} onReady={() => setBgReady(true)} visible={bgReady} />
       <div
         ref={containerRef}
-        className="absolute left-1/2 -translate-x-1/2 top-0 translate-y-[12vh] w-[90vw] sm:w-[76vw] md:w-[52vw] lg:w-[40vw] h-[46vh] sm:h-[50vh] md:h-[54vh] lg:h-[56vh] pointer-events-auto z-0"
+        className={
+          `absolute left-1/2 -translate-x-1/2 top-0 ${isIOS ? (isStandalone ? "translate-y-[9vh]" : "translate-y-[7vh]") : "translate-y-[12vh]"} w-[90vw] sm:w-[76vw] md:w-[52vw] lg:w-[40vw] h-[46vh] sm:h-[50vh] md:h-[54vh] lg:h-[56vh] pointer-events-auto z-10 transition-all duration-700 ease-out ${logoReady && bgReady ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`
+        }
         aria-label="Iniciar sesión - AEON Isologo"
       />
 
       <div className={
         `absolute z-10 left-1/2 -translate-x-1/2 ${
-          isIOS ? "bottom-[20vh] sm:bottom-[22vh] w-[82vw] sm:w-[68vw]" : "bottom-[12vh] sm:bottom-[14vh] w-[86vw] sm:w-[72vw]"
-        } md:w-[28rem] px-0`
+          isIOS ? (isStandalone ? "bottom-[17vh] sm:bottom-[19vh] w-[82vw] sm:w-[68vw]" : "bottom-[26vh] sm:bottom-[28vh] w-[82vw] sm:w-[68vw]") : "bottom-[12vh] sm:bottom-[14vh] w-[86vw] sm:w-[72vw]"
+        } md:w-[28rem] px-0 transition-all duration-700 ease-out ${logoReady && bgReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'} delay-150`
       }>
           <div className="w-full space-y-4">
             <div>
@@ -401,5 +418,139 @@ export default function Login() {
     </main>
   );
 }
+
+// Fullscreen background particles component
+type BgProps = { onReady?: () => void; visible?: boolean };
+const BackgroundParticles = React.forwardRef<HTMLDivElement, BgProps>(function BackgroundParticles({ onReady, visible }, ref) {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, host.clientWidth / host.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 22);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(host.clientWidth, host.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000, 0);
+    host.appendChild(renderer.domElement);
+
+    const isMobile = window.innerWidth < 768;
+    // Layered approach for depth and definition
+    const counts = {
+      fine: isMobile ? 2400 : 4200,
+      mid: isMobile ? 900 : 1500,
+      spark: isMobile ? 200 : 320,
+    };
+
+    // Glitter-like sharp particle texture (less blur)
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = 64; texCanvas.height = 64;
+    const tctx = texCanvas.getContext("2d")!;
+    const r = 18; // smaller core for crisp edge
+    const g = tctx.createRadialGradient(32, 32, 0, 32, 32, r);
+    g.addColorStop(0.0, "rgba(255,255,255,1.0)");
+    g.addColorStop(0.06, "rgba(255,255,255,0.98)");
+    g.addColorStop(0.12, "rgba(255,255,255,0.20)");
+    g.addColorStop(1.0, "rgba(255,255,255,0.0)");
+    tctx.fillStyle = g; tctx.beginPath(); tctx.arc(32, 32, r, 0, Math.PI*2); tctx.fill();
+    const sharpTexture = new THREE.CanvasTexture(texCanvas);
+    sharpTexture.colorSpace = THREE.SRGBColorSpace;
+    sharpTexture.magFilter = THREE.NearestFilter;
+    sharpTexture.minFilter = THREE.NearestFilter;
+
+    const platinum = new THREE.Color(0xE5E4E2);
+
+    const makeCloud = (count: number, size: number, opacity: number, spreadZ: number, armCount: number, alphaTest = 0.4) => {
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const t = i / count;
+        const angle = t * Math.PI * 8 + (Math.floor(t * armCount) / armCount) * 1.1;
+        const radius = 4 + 30 * Math.pow(t, 0.92) + (Math.random() - 0.5) * 1.8;
+        pos[i3 + 0] = Math.cos(angle) * radius + (Math.random() - 0.5) * 0.8;
+        pos[i3 + 1] = (Math.sin(angle) * radius * 0.5) + (Math.random() - 0.5) * 0.8;
+        pos[i3 + 2] = (Math.random() - 0.5) * spreadZ;
+        const c = platinum.clone().multiplyScalar(0.85 + Math.random() * 0.25);
+        col[i3 + 0] = c.r; col[i3 + 1] = c.g; col[i3 + 2] = c.b;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      const mat = new THREE.PointsMaterial({
+        size,
+        map: sharpTexture,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true,
+        opacity,
+        sizeAttenuation: true,
+      });
+      mat.alphaTest = alphaTest;
+      const pts = new THREE.Points(geo, mat);
+      return { geo, mat, pts, baseSize: size };
+    };
+
+    const fine = makeCloud(counts.fine, isMobile ? 0.6 : 0.7, 0.30, 12, 10, 0.5);
+    const mid = makeCloud(counts.mid, isMobile ? 0.9 : 1.1, 0.48, 14, 8, 0.45);
+    const sparkA = makeCloud(counts.spark, isMobile ? 1.2 : 1.5, 0.62, 16, 7, 0.4);
+    const sparkB = makeCloud(counts.spark, isMobile ? 1.2 : 1.5, 0.62, 16, 9, 0.4);
+
+    fine.pts.rotation.x = -0.28;
+    mid.pts.rotation.x = -0.26;
+    sparkA.pts.rotation.x = -0.24;
+    sparkB.pts.rotation.x = -0.24;
+    scene.add(fine.pts, mid.pts, sparkA.pts, sparkB.pts);
+
+    let raf = 0; let t = 0;
+    const animate = () => {
+      raf = requestAnimationFrame(animate);
+      t += 0.016;
+      fine.pts.rotation.z += 0.0008;
+      mid.pts.rotation.z += 0.0011;
+      sparkA.pts.rotation.z += 0.0016;
+      sparkB.pts.rotation.z -= 0.0014;
+      // sparkle pulsation (layer-wise) and slight size twinkles
+      const twA = 0.5 + 0.5 * Math.sin(t * 2.2);
+      const twB = 0.5 + 0.5 * Math.cos(t * 1.8);
+      sparkA.mat.opacity = 0.45 + 0.35 * twA;
+      sparkB.mat.opacity = 0.45 + 0.35 * twB;
+      sparkA.mat.size = sparkA.baseSize * (1.0 + 0.35 * twA);
+      sparkB.mat.size = sparkB.baseSize * (1.0 + 0.35 * twB);
+      renderer.render(scene, camera);
+    };
+    animate();
+    // signal ready after first frame
+    requestAnimationFrame(() => {
+      onReady?.();
+    });
+
+    const onResize = () => {
+      if (!host) return;
+      camera.aspect = host.clientWidth / host.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(host.clientWidth, host.clientHeight);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+      host.removeChild(renderer.domElement);
+      fine.geo.dispose(); mid.geo.dispose(); sparkA.geo.dispose(); sparkB.geo.dispose();
+      fine.mat.dispose(); mid.mat.dispose(); sparkA.mat.dispose(); sparkB.mat.dispose();
+      sharpTexture.dispose();
+    };
+  }, []);
+
+  return <div ref={(node) => { hostRef.current = node!; if (typeof ref === 'function') ref(node!); else if (ref) (ref as any).current = node; }} className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-700 ease-out ${visible ? 'opacity-100' : 'opacity-0'}`} />;
+});
 
 
