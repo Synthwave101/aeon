@@ -270,7 +270,8 @@ export default function Login() {
       setIsIOS(/iPad|iPhone|iPod/.test(ua));
       // Detect PWA installed mode
       const mq = window.matchMedia('(display-mode: standalone)');
-      setIsStandalone((window.navigator as any).standalone === true || mq.matches);
+      const nav = window.navigator as Navigator & { standalone?: boolean };
+      setIsStandalone(nav.standalone === true || mq.matches);
       try { mq.addEventListener('change', (e) => setIsStandalone(e.matches)); } catch { /* Safari older */ }
     }
   }, []);
@@ -550,7 +551,7 @@ const BackgroundParticles = React.forwardRef<HTMLDivElement, BgProps>(function B
     };
   }, []);
 
-  return <div ref={(node) => { hostRef.current = node!; if (typeof ref === 'function') ref(node!); else if (ref) (ref as any).current = node; }} className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-700 ease-out ${visible ? 'opacity-100' : 'opacity-0'}`} />;
+  return <div ref={(node) => { hostRef.current = node!; if (typeof ref === 'function') ref(node!); else if (ref && 'current' in (ref as unknown as { current?: HTMLDivElement | null })) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node; }} className={`pointer-events-none absolute inset-0 z-0 transition-opacity duration-700 ease-out ${visible ? 'opacity-100' : 'opacity-0'}`} />;
 });
 
 
